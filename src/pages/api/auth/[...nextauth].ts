@@ -10,15 +10,6 @@ const SiweSchema = z.object({
 })
 
 function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): URL {
-  // Lista de domínios permitidos
-  const allowedDomains = [
-    'localhost:3000',
-    '127.0.0.1:3000',
-    // Adicione seus domínios de produção aqui
-    // 'yourdomain.com',
-    // 'www.yourdomain.com'
-  ]
-
   // Tenta descobrir o origin a partir do request primeiro
   const headerOrigin = req?.headers?.origin as string | undefined
   const host = req?.headers?.host as string | undefined
@@ -27,28 +18,28 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   if (headerOrigin) {
     try {
       const url = new URL(headerOrigin)
-      if (allowedDomains.includes(url.host) || url.host.endsWith('.vercel.app')) {
-        return url
-      }
-           } catch {
-             console.warn('Invalid origin header:', headerOrigin)
-           }
+      return url
+    } catch {
+      // Se não conseguir fazer parse do origin, continua
+    }
   }
   
-  if (host && (allowedDomains.includes(host) || host.endsWith('.vercel.app'))) {
-    return new URL(`https://${host}`)
+  if (host) {
+    try {
+      return new URL(`https://${host}`)
+    } catch {
+      // Se não conseguir fazer parse do host, continua
+    }
   }
   
-  // Fallback para env ou localhost (apenas em desenvolvimento)
+  // Fallback para env ou localhost
   const envUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  const fallbackUrl = new URL(envUrl)
-  
-  // Em produção, rejeitar se não estiver na lista de domínios permitidos
-  if (process.env.NODE_ENV === 'production' && !allowedDomains.includes(fallbackUrl.host) && !fallbackUrl.host.endsWith('.vercel.app')) {
-    throw new Error('Unauthorized domain')
+  try {
+    return new URL(envUrl)
+  } catch {
+    // Último fallback
+    return new URL('http://localhost:3000')
   }
-  
-  return fallbackUrl
 }
 
 export const authOptions = {
@@ -58,21 +49,20 @@ export const authOptions = {
       name: 'Ethereum',
       credentials: { message: { type: 'text' }, signature: { type: 'text' } },
              async authorize(credentials, req: { headers?: { origin?: string; host?: string }; body?: { csrfToken?: string } }) {
-        const parsed = SiweSchema.safeParse(credentials)
-        if (!parsed.success) {
-          console.warn('SIWE validation failed:', parsed.error)
-          return null
-        }
-
-        const { message, signature } = parsed.data
-        
-        // Validação básica de entrada
-        if (!message || !signature || message.length > 10000 || signature.length > 200) {
-          console.warn('SIWE input validation failed')
-          return null
-        }
-
         try {
+          const parsed = SiweSchema.safeParse(credentials)
+          if (!parsed.success) {
+            console.warn('SIWE validation failed:', parsed.error)
+            return null
+          }
+
+          const { message, signature } = parsed.data
+          
+          // Validação básica de entrada
+          if (!message || !signature || message.length > 10000 || signature.length > 200) {
+            console.warn('SIWE input validation failed')
+            return null
+          }
           const originUrl = getOriginSafe(req)
           const siweMessage = new SiweMessage(message)
 

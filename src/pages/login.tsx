@@ -656,15 +656,24 @@ function LoginComponent({ csrfToken }: Props) {
 }
 
 export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
-  const csrfToken = await getCsrfToken(ctx)
-  // Exponha uma base URL pública para o client montar domain/uri
-  const baseUrl = process.env.NEXTAUTH_URL
-  return {
-    props: {
-      csrfToken: csrfToken ?? '',
-      // Para o client acessar:
-      ...(baseUrl ? { NEXT_PUBLIC_BASE_URL: baseUrl } : {}),
-    } as { csrfToken: string; NEXT_PUBLIC_BASE_URL?: string },
+  try {
+    const csrfToken = await getCsrfToken(ctx)
+    // Exponha uma base URL pública para o client montar domain/uri
+    const baseUrl = process.env.NEXTAUTH_URL
+    return {
+      props: {
+        csrfToken: csrfToken ?? '',
+        // Para o client acessar:
+        ...(baseUrl ? { NEXT_PUBLIC_BASE_URL: baseUrl } : {}),
+      } as { csrfToken: string; NEXT_PUBLIC_BASE_URL?: string },
+    }
+  } catch (error) {
+    console.error('getServerSideProps error:', error)
+    return {
+      props: {
+        csrfToken: '',
+      } as { csrfToken: string; NEXT_PUBLIC_BASE_URL?: string },
+    }
   }
 }
 
