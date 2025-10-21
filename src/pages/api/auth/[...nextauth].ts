@@ -14,6 +14,7 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   const allowedDomains = [
     'localhost:3000',
     '127.0.0.1:3000',
+    'siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app',
     // Adicione seus domínios de produção aqui
     // 'yourdomain.com',
     // 'www.yourdomain.com'
@@ -23,11 +24,14 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   const headerOrigin = req?.headers?.origin as string | undefined
   const host = req?.headers?.host as string | undefined
   
+  console.log('getOriginSafe - headerOrigin:', headerOrigin)
+  console.log('getOriginSafe - host:', host)
+  
   // Validação de domínio
   if (headerOrigin) {
     try {
       const url = new URL(headerOrigin)
-      if (allowedDomains.includes(url.host)) {
+      if (allowedDomains.includes(url.host) || url.host.endsWith('.vercel.app')) {
         return url
       }
            } catch {
@@ -35,8 +39,8 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
            }
   }
   
-  if (host && allowedDomains.includes(host)) {
-    return new URL(`http://${host}`)
+  if (host && (allowedDomains.includes(host) || host.endsWith('.vercel.app'))) {
+    return new URL(`https://${host}`)
   }
   
   // Fallback para env ou localhost (apenas em desenvolvimento)
@@ -44,7 +48,7 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   const fallbackUrl = new URL(envUrl)
   
   // Em produção, rejeitar se não estiver na lista de domínios permitidos
-  if (process.env.NODE_ENV === 'production' && !allowedDomains.includes(fallbackUrl.host)) {
+  if (process.env.NODE_ENV === 'production' && !allowedDomains.includes(fallbackUrl.host) && !fallbackUrl.host.endsWith('.vercel.app')) {
     throw new Error('Unauthorized domain')
   }
   

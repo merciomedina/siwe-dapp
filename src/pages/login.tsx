@@ -120,7 +120,11 @@ function LoginComponent({ csrfToken }: Props) {
         // 'https://www.yourdomain.com'
       ]
 
-      if (!allowedOrigins.includes(currentOrigin)) {
+      // Permitir domínios do Vercel
+      const isVercelDomain = currentOrigin.includes('.vercel.app')
+      const isAllowedOrigin = allowedOrigins.includes(currentOrigin)
+
+      if (!isAllowedOrigin && !isVercelDomain) {
         setError('Domínio não autorizado')
         return
       }
