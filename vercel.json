@@ -1,10 +1,4 @@
 {
-  "env": {
-    "NEXTAUTH_URL": "https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app",
-    "NEXTAUTH_SECRET": "@nextauth-secret",
-    "NEXT_PUBLIC_BASE_URL": "https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app",
-    "ALCHEMY_API_KEY": "@alchemy-api-key"
-  },
   "functions": {
     "src/pages/api/**/*.ts": {
       "maxDuration": 30

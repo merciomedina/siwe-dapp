@@ -14,7 +14,6 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   const allowedDomains = [
     'localhost:3000',
     '127.0.0.1:3000',
-    'siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app',
     // Adicione seus domínios de produção aqui
     // 'yourdomain.com',
     // 'www.yourdomain.com'
@@ -23,9 +22,6 @@ function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): U
   // Tenta descobrir o origin a partir do request primeiro
   const headerOrigin = req?.headers?.origin as string | undefined
   const host = req?.headers?.host as string | undefined
-  
-  console.log('getOriginSafe - headerOrigin:', headerOrigin)
-  console.log('getOriginSafe - host:', host)
   
   // Validação de domínio
   if (headerOrigin) {

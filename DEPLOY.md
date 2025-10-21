@@ -6,18 +6,15 @@ Configure as seguintes variáveis de ambiente no painel do Vercel:
 
 ### 1. NEXTAUTH_URL
 ```
-https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app
+https://seu-dominio.vercel.app
 ```
 
 ### 2. NEXTAUTH_SECRET
-Gere uma chave secreta segura:
-```bash
-openssl rand -base64 32
-```
+Gere uma chave secreta segura usando um gerador de senhas seguro.
 
 ### 3. NEXT_PUBLIC_BASE_URL
 ```
-https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app
+https://seu-dominio.vercel.app
 ```
 
 ### 4. ALCHEMY_API_KEY
@@ -26,14 +23,10 @@ Sua chave da API do Alchemy para Ethereum.
 ## Como Configurar no Vercel
 
 1. Acesse o painel do Vercel
-2. Vá para o projeto `siwe-dapp`
+2. Vá para o seu projeto
 3. Clique em **Settings** > **Environment Variables**
-4. Adicione cada variável:
-   - **Name**: `NEXTAUTH_URL`
-   - **Value**: `https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app`
-   - **Environment**: Production, Preview, Development
-
-5. Repita para todas as variáveis
+4. Adicione cada variável com os valores apropriados
+5. Configure para Production, Preview e Development
 
 ## Após Configurar
 
