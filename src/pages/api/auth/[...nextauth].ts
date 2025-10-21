@@ -9,47 +9,16 @@ const SiweSchema = z.object({
   signature: z.string(),
 })
 
-function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): URL {
-  // Tenta descobrir o origin a partir do request primeiro
-  const headerOrigin = req?.headers?.origin as string | undefined
-  const host = req?.headers?.host as string | undefined
-  
-  // Validação de domínio
-  if (headerOrigin) {
-    try {
-      const url = new URL(headerOrigin)
-      return url
-    } catch {
-      // Se não conseguir fazer parse do origin, continua
-    }
-  }
-  
-  if (host) {
-    try {
-      return new URL(`https://${host}`)
-    } catch {
-      // Se não conseguir fazer parse do host, continua
-    }
-  }
-  
-  // Fallback para env ou localhost
-  const envUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
-  try {
-    return new URL(envUrl)
-  } catch {
-    // Último fallback
-    return new URL('http://localhost:3000')
-  }
-}
-
 export const authOptions = {
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
       name: 'Ethereum',
       credentials: { message: { type: 'text' }, signature: { type: 'text' } },
-             async authorize(credentials, req: { headers?: { origin?: string; host?: string }; body?: { csrfToken?: string } }) {
+      async authorize(credentials) {
         try {
+          console.log('Authorize called with credentials:', !!credentials)
+          
           const parsed = SiweSchema.safeParse(credentials)
           if (!parsed.success) {
             console.warn('SIWE validation failed:', parsed.error)
@@ -58,77 +27,35 @@ export const authOptions = {
 
           const { message, signature } = parsed.data
           
-          // Validação básica de entrada
-          if (!message || !signature || message.length > 10000 || signature.length > 200) {
-            console.warn('SIWE input validation failed')
+          // Validação básica
+          if (!message || !signature) {
+            console.warn('Missing message or signature')
             return null
           }
-          const originUrl = getOriginSafe(req)
+
           const siweMessage = new SiweMessage(message)
-
-          // Validações de segurança adicionais
-          if (!siweMessage.address || !siweMessage.chainId) {
-            console.warn('SIWE message missing required fields')
-            return null
-          }
-
-          // Validação de endereço Ethereum
-          if (!/^0x[a-fA-F0-9]{40}$/.test(siweMessage.address)) {
-            console.warn('SIWE invalid address format')
-            return null
-          }
-
-          // Validação de chain ID (apenas redes suportadas)
-          const supportedChains = [1, 11155111] // Mainnet e Sepolia
-          if (!supportedChains.includes(siweMessage.chainId)) {
-            console.warn('SIWE unsupported chain ID:', siweMessage.chainId)
-            return null
-          }
-
-          // Valida domínio/URI somente se estiverem coerentes
-          if (siweMessage.domain && siweMessage.domain !== originUrl.host) {
-            console.warn('SIWE domain mismatch:', siweMessage.domain, 'vs', originUrl.host)
-            return null
-          }
-          if (siweMessage.uri && !siweMessage.uri.toString().startsWith(originUrl.origin)) {
-            console.warn('SIWE URI mismatch:', siweMessage.uri, 'vs', originUrl.origin)
-            return null
-          }
-
-                 // Validação de nonce (csrfToken)
-                 const csrfToken = req.body?.csrfToken
-          if (!csrfToken || siweMessage.nonce !== csrfToken) {
-            console.warn('SIWE nonce validation failed')
-            return null
-          }
-
-                 // Validação de tempo (não permitir mensagens muito antigas)
-                 const messageTime = new Date(siweMessage.issuedAt || new Date())
-          const now = new Date()
-          const timeDiff = now.getTime() - messageTime.getTime()
-          const maxAge = 5 * 60 * 1000 // 5 minutos
           
-          if (timeDiff > maxAge) {
-            console.warn('SIWE message too old:', timeDiff, 'ms')
+          // Verificação básica
+          if (!siweMessage.address) {
+            console.warn('Missing address in SIWE message')
             return null
           }
 
-          const result = await siweMessage.verify({ signature, time: new Date().toISOString() })
+          const result = await siweMessage.verify({ signature })
           if (!result.success) {
-            console.warn('SIWE signature verification failed:', result.error)
+            console.warn('SIWE verification failed:', result.error)
             return null
           }
 
-          // Log de sucesso (sem dados sensíveis)
-          console.log('SIWE authentication successful for address:', siweMessage.address.slice(0, 6) + '...')
+          console.log('SIWE authentication successful')
 
           return {
             id: siweMessage.address,
             address: siweMessage.address,
-            chainId: siweMessage.chainId,
+            chainId: siweMessage.chainId || 1,
           }
         } catch (err) {
-          console.error('SIWE authorize error:', err)
+          console.error('Authorize error:', err)
           return null
         }
       },
