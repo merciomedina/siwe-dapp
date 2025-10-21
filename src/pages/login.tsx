@@ -114,6 +114,7 @@ function LoginComponent({ csrfToken }: Props) {
       const allowedOrigins = [
         'http://localhost:3000',
         'https://localhost:3000',
+        'https://siwe-dapp-o7uziweqw-mercios-projects-24963103.vercel.app'
         // Adicione seus domínios de produção aqui
         // 'https://yourdomain.com',
         // 'https://www.yourdomain.com'
