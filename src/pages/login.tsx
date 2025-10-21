@@ -28,7 +28,7 @@ function LoginComponent({ csrfToken }: Props) {
   const [currentCsrfToken, setCurrentCsrfToken] = useState<string>(csrfToken)
 
   useEffect(() => {
-    if ((session as any)?.address) {
+    if ((session as { address?: string })?.address) {
       router.replace('/dashboard')
     }
   }, [session, router])
@@ -59,7 +59,7 @@ function LoginComponent({ csrfToken }: Props) {
     // Check if wallet is available
     const checkWallet = () => {
       if (typeof window !== 'undefined') {
-        const ethereum = (window as any).ethereum
+        const ethereum = (window as { ethereum?: unknown }).ethereum
         setHasWallet(!!ethereum)
       }
     }
@@ -167,13 +167,14 @@ function LoginComponent({ csrfToken }: Props) {
       if (res?.ok) {
         router.replace('/dashboard')
       }
-    } catch (e: any) {
+    } catch (e: unknown) {
       console.error('SIWE error:', e)
       
       // Mensagens de erro mais específicas
-      if (e?.message?.includes('User rejected')) {
+      const errorMessage = e instanceof Error ? e.message : String(e)
+      if (errorMessage.includes('User rejected')) {
         setError('Assinatura rejeitada pelo usuário')
-      } else if (e?.message?.includes('network')) {
+      } else if (errorMessage.includes('network')) {
         setError('Erro de rede. Verifique sua conexão.')
       } else {
         setError('Falha ao assinar/verificar SIWE. Tente novamente.')
@@ -659,7 +660,7 @@ export const getServerSideProps: GetServerSideProps<Props> = async (ctx) => {
       csrfToken: csrfToken ?? '',
       // Para o client acessar:
       ...(baseUrl ? { NEXT_PUBLIC_BASE_URL: baseUrl } : {}),
-    } as any,
+    } as { csrfToken: string; NEXT_PUBLIC_BASE_URL?: string },
   }
 }
 

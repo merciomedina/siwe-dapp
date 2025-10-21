@@ -8,7 +8,7 @@ import { formatEther } from 'viem'
 import dynamic from 'next/dynamic'
 
 function DashboardComponent() {
-  const { status, session } = useSessionGuard()
+  const { status } = useSessionGuard()
   const { address } = useAccount()
   const chainId = useChainId()
   const { language, translations, toggleLanguage } = useLanguage()

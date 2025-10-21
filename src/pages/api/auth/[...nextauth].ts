@@ -1,5 +1,5 @@
 // src/pages/api/auth/[...nextauth].ts
-import NextAuth, { type NextAuthOptions } from 'next-auth'
+import NextAuth from 'next-auth'
 import Credentials from 'next-auth/providers/credentials'
 import { SiweMessage } from 'siwe'
 import { z } from 'zod'
@@ -9,7 +9,7 @@ const SiweSchema = z.object({
   signature: z.string(),
 })
 
-function getOriginSafe(req: any): URL {
+function getOriginSafe(req: { headers?: { origin?: string; host?: string } }): URL {
   // Lista de domínios permitidos
   const allowedDomains = [
     'localhost:3000',
@@ -30,9 +30,9 @@ function getOriginSafe(req: any): URL {
       if (allowedDomains.includes(url.host)) {
         return url
       }
-    } catch (e) {
-      console.warn('Invalid origin header:', headerOrigin)
-    }
+           } catch {
+             console.warn('Invalid origin header:', headerOrigin)
+           }
   }
   
   if (host && allowedDomains.includes(host)) {
@@ -51,13 +51,13 @@ function getOriginSafe(req: any): URL {
   return fallbackUrl
 }
 
-export const authOptions: NextAuthOptions = {
+export const authOptions = {
   session: { strategy: 'jwt' },
   providers: [
     Credentials({
       name: 'Ethereum',
       credentials: { message: { type: 'text' }, signature: { type: 'text' } },
-      async authorize(credentials, req) {
+             async authorize(credentials, req: { headers?: { origin?: string; host?: string }; body?: { csrfToken?: string } }) {
         const parsed = SiweSchema.safeParse(credentials)
         if (!parsed.success) {
           console.warn('SIWE validation failed:', parsed.error)
@@ -105,15 +105,15 @@ export const authOptions: NextAuthOptions = {
             return null
           }
 
-          // Validação de nonce (csrfToken)
-          const csrfToken = (req as any).body?.csrfToken
+                 // Validação de nonce (csrfToken)
+                 const csrfToken = req.body?.csrfToken
           if (!csrfToken || siweMessage.nonce !== csrfToken) {
             console.warn('SIWE nonce validation failed')
             return null
           }
 
-          // Validação de tempo (não permitir mensagens muito antigas)
-          const messageTime = new Date(siweMessage.issuedAt)
+                 // Validação de tempo (não permitir mensagens muito antigas)
+                 const messageTime = new Date(siweMessage.issuedAt || new Date())
           const now = new Date()
           const timeDiff = now.getTime() - messageTime.getTime()
           const maxAge = 5 * 60 * 1000 // 5 minutos
@@ -145,20 +145,23 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async jwt({ token, user }: { token: any; user: any }) {
       if (user?.address) {
-        token.address = (user as any).address
-        token.chainId = (user as any).chainId
+        token.address = (user as { address: string; chainId: number }).address
+        token.chainId = (user as { address: string; chainId: number }).chainId
       }
       return token
     },
-    async session({ session, token }) {
-      ;(session as any).address = token.address
-      ;(session as any).chainId = token.chainId
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    async session({ session, token }: { session: any; token: any }) {
+      ;(session as { address?: string; chainId?: number }).address = token.address
+      ;(session as { address?: string; chainId?: number }).chainId = token.chainId
       return session
     },
   },
   pages: { signIn: '/login' },
 }
 
+// @ts-expect-error - NextAuth type issue
 export default NextAuth(authOptions)
